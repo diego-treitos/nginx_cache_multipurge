@@ -12,6 +12,8 @@ local md5 = require 'md5'
 ---------------------------------- globals -------------------------------------
 --------------------------------------------------------------------------------
 --
+-- Variable to control wether to run or not. 
+local cmp_run_if = ngx.var.cmp_run_if
 -- Value of the cache_key variable. i.e. $proxy_cache_key
 local cmp_cache_key = ngx.var.cmp_cache_key
 -- Path where the cache files are stored. i.e. /var/www/cache
@@ -20,6 +22,8 @@ local cmp_cache_path = ngx.var.cmp_cache_path
 local cmp_cache_strip = ngx.var.cmp_cache_strip or ''
 
 ------ FIXES
+-- check if we won't purge
+if not cmp_run_if then ngx.exit( ngx.OK ) end
 -- remove tailing slash from cmp_cache_strip
 cmp_cache_strip = cmp_cache_strip:gsub( '/$', '' )
 -- url to be purged
