@@ -53,7 +53,7 @@ end
 --
 ----------------------------------------------------------- purge all entries --
 function purge_all()
-  os.execute( "rm -rd '"..cmp_cache_path.."/*'" )
+  os.execute( "rm -rd '"..cmp_cache_path.."'/*" )
 end
 
 ------------------------------------------------------ purge matching entries --
