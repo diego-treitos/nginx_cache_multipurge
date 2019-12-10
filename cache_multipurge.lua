@@ -21,7 +21,7 @@ local cmp_cache_path = ngx.var.cmp_cache_path
 -- Initial segment of the URL to be stripped to get the URL to purge. i.e. /purge/dynamic
 local cmp_cache_strip = ngx.var.cmp_cache_strip or ''
 
------- FIXES
+------ patch global variables
 -- check if we won't purge
 if not cmp_run_if then ngx.exit( ngx.OK ) end
 -- remove tailing slash from cmp_cache_strip
@@ -72,7 +72,7 @@ end
 -------------------------------------------------------- purge specific entry --
 function purge_one()
   local cache_key_md5 = md5.sumhexa( cmp_cache_key )
-  os.execute( "find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} +" )
+  os.execute( "find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} + -quit" )
 end
 
 --------------------------------------------------------------------------------
