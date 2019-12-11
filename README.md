@@ -31,7 +31,7 @@ Handle **cache purges** in a versatile and easy way. This *lua module* will allo
 * `$cmp_cache_path`: (**mandatory**) Path to where your cache files are stored in your filesystem. This value should match the one provided to `proxy_cache_path`, `fastcgi_cache_path`, etc.
 * `$cmp_cache_strip`: Path to strip from the beginin of a URL before the URL is cleared from cache. This is useful if you call the *nginx_cache_multipurge* from a location different than `/`. For example, if you are using `/cache/purge` as your location to purge the cache, your `$cmp_cache_strip` should be `/cache/purge`, this way, when requesting `/cache/purge/my/file.png` the URL to purge will be `/my/file.png`.
 
-### Mimic the commercial [cache_purge](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_purge)
+### Example 1: Mimic the commercial [cache_purge](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_purge)
 
 Add this map somewhere (i.e. `/etc/nginx/conf.d/method_map.conf`)
 
@@ -63,7 +63,31 @@ And done. After this:
 * Request `PURGE /path/to/images/my*` to purge all images that start with *my* in that path.
 * Request `PURGE /*` to purge all the cache.
 
+### Example 2: Use a custom location with a authentication token from a cookie
 
+Add a map like this, for example in `/etc/nginx/conf.d/cache_purge.conf`
 
+```
+map $cookie_purge_token $purge_cache {
+  default 0;
+  b04f01fc92094bcc43d1cb78adc7836e 1;
+}
+```
 
-The *requested URL* is used 
+Then add a location like this
+
+```
+location /cache/purge {
+  set $cmp_run_if $purge_cache;
+  set $cmp_cache_key $scheme$host$uri$is_args$args;
+  set $cmp_cache_path "/var/www/cache/";
+  set $cmp_cache_strip "/cache/purge/";
+  content_by_lua_file /etc/nginx/lua/cache_multipurge.lua;
+}
+```
+
+And done. After this:
+
+* Request `GET /cache/purge/path/to/images/myimage.png` to purge that image.
+* Request `GET /cache/purge/images/my*` to purge all images that start with *my* in that path.
+* Request `GET /cache/purge/*` to purge all the cache.
