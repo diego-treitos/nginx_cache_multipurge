@@ -1,9 +1,7 @@
 -- vim: set ts=2 sw=2 sts=2 et:
 --
--- Diego Blanco <diego.blanco@treitos.com>
-
--- LIMITATIONS:
---   * cache_key must contain $request_uri (which totally should)
+--  Author: Diego Blanco <diego.blanco@treitos.com>
+-- Version: 0.1
 
 local md5 = require 'md5'
 
@@ -66,6 +64,7 @@ function purge_one()
   local cache_key_md5 = md5.sumhexa( cmp_cache_key )
   os.execute( "find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} + -quit" )
 end
+
 
 --------------------------------------------------------------------------------
 ------------------------------------- main -------------------------------------
