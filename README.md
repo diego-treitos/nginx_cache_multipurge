@@ -91,3 +91,33 @@ And done. After this:
 * Request `GET /cache/purge/path/to/images/myimage.png` to purge that image.
 * Request `GET /cache/purge/images/my*` to purge all images that start with *my* in that path.
 * Request `GET /cache/purge/*` to purge all the cache.
+
+
+## Optional keyfinder helper setup
+
+If your cache consists of a large number of files, scanning it with `grep` can become quite slow. 
+To gain better performance, you can use the included keyfinder helper. You’ll have to build it yourself, however.
+### Requirements
+You will need `gcc`, `libc` headers and `make`. On Debian/Ubuntu type (`libc` is included with `gcc`):
+```
+apt install gcc make
+```
+### Installation
+Build the binary with 
+```
+make
+```
+and then install as root with 
+```
+make install
+```
+By default the `nginx_cache_keyfinder` binary is installed in `/usr/local/bin`. If you want a different location, you can copy it manually instead. 
+### Configuration
+Enable the keyfinder in your purge location config: 
+```
+set $cmp_cache_keyfinder 1;
+```
+If you choose to put the binary in a different location, you can adjust its path with
+```
+set $cmp_cache_keyfinder_path <path to binary>;
+``` 
