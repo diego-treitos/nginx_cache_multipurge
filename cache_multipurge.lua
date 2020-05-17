@@ -9,7 +9,7 @@ local md5 = require 'md5'
 ---------------------------------- globals -------------------------------------
 --------------------------------------------------------------------------------
 --
--- Variable to control wether to run or not. 
+-- Variable to control whether to run or not.
 local cmp_run_if = ngx.var.cmp_run_if or ''
 -- Value of the cache_key variable. i.e. $proxy_cache_key
 local cmp_cache_key = ngx.var.cmp_cache_key
@@ -17,6 +17,10 @@ local cmp_cache_key = ngx.var.cmp_cache_key
 local cmp_cache_path = ngx.var.cmp_cache_path
 -- Initial segment of the URL to be stripped to get the URL to purge. i.e. /purge/dynamic
 local cmp_cache_strip = ngx.var.cmp_cache_strip or ''
+-- Use keyfinder helper instead of grep
+local cmp_cache_keyfinder = ngx.var.cmp_cache_keyfinder or ''
+-- path to keyfinder binary
+local cmp_cache_keyfinder_path = ngx.var.cmp_cache_keyfinder_path or "nginx_cache_keyfinder"
 
 ------ patch global variables
 -- check if we won't purge
@@ -51,12 +55,19 @@ end
 
 ------------------------------------------------------ purge matching entries --
 function purge_multi( uri )
-  -- escape special characters for grep
-  local cache_key_re = cmp_cache_key:gsub( "([%.%[%]])", "\\%1" )
-  local cache_key_re = cache_key_re:gsub( cmp_uri:gsub("%p","%%%1"), uri..".*" )
-  local safe_grep_param = safe_shell_command_param( "^KEY: "..cache_key_re )
+  if cmp_cache_keyfinder == "" or cmp_cache_keyfinder == "0" then -- use grep
+    -- escape special characters for grep
+    local cache_key_re = cmp_cache_key:gsub( "([%.%[%]])", "\\%1" )
+    cache_key_re = cache_key_re:gsub( cmp_uri:gsub("%p","%%%1"), uri..".*" )
+    local safe_grep_param = safe_shell_command_param( "^KEY: "..cache_key_re )
 
-  os.execute( "grep -Raslm1  "..safe_grep_param.." "..cmp_cache_path.." | xargs -r rm -f" )
+    os.execute( "grep -Raslm1  "..safe_grep_param.." "..cmp_cache_path.." | xargs -r rm -f" )
+  else -- use keyfinder
+    local uri_start = cmp_cache_key:find(cmp_uri, 1, true) or cmp_cache_key:len()
+    local prefix = safe_shell_command_param( cmp_cache_key:sub(1, uri_start-1)..uri )
+    local suffix = " "..safe_shell_command_param( cmp_cache_key:sub(uri_start + cmp_uri:len()) )
+    os.execute(cmp_cache_keyfinder_path.." "..cmp_cache_path.." "..prefix..suffix.." -d")
+  end
 end
 
 -------------------------------------------------------- purge specific entry --
@@ -71,12 +82,12 @@ end
 --------------------------------------------------------------------------------
 --
 -- check if last character of the request_uri is a *
-if string.find( string.reverse( cmp_uri ), '*', 1, 1 ) then
+if string.sub( cmp_uri, -1 ) == '*' then
   if cmp_uri == '/*' then
     purge_all()
   else
     -- uri is request_uri without the trailing *
-    local uri = string.gsub( cmp_uri, '%*$', '' )
+    local uri = string.sub( cmp_uri, 1, -2 )
     purge_multi( uri )
   end
 else
