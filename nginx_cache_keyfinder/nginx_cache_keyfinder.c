@@ -15,6 +15,7 @@ static size_t keylen;
 static size_t key2len;
 static size_t nbytes;
 static _Bool dodelete;
+static _Bool bufferr;
 
 static int
 callback(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf)
@@ -47,6 +48,11 @@ callback(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf
 
                 ptr = buf + keylen;
                 end = memchr(ptr, '\n', bytes_read - keylen);
+                if (!end) {
+	                fprintf(stderr, "Invalid cache file “%s” encountered and skipped.\n", fpath);
+                	bufferr = 1;
+                	return FTW_CONTINUE;
+                }
                 ptr = end - key2len;
                 if (memcmp(ptr, key2, key2len) != 0)
                         return FTW_CONTINUE;
@@ -73,6 +79,7 @@ main(int argc, char *argv[])
 	}
 
 	dodelete = (argc > 3 && strcmp(argv[argc - 1], "-d") == 0);
+	bufferr = 0;
 
 	strcpy(key, "\nKEY: ");
 	strncat(key, argv[2], 249);
@@ -88,6 +95,10 @@ main(int argc, char *argv[])
 
 	if (nftw(argv[1], callback, 20, flags) == -1) {
 		perror("nftw");
+		exit(EXIT_FAILURE);
+	}
+
+	if (bufferr) {
 		exit(EXIT_FAILURE);
 	}
 
