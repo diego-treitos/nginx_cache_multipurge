@@ -10,7 +10,7 @@
 
 static char key[256];
 static char key2[256];
-static char buf[512];
+static char buf[1024];
 static size_t keylen;
 static size_t key2len;
 static size_t nbytes;
@@ -22,6 +22,7 @@ callback(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf
 {
 	ssize_t bytes_read;
 	FILE *fp;
+	static size_t keypos = 0;
 
 	// not a file?
 	if (tflag != FTW_F)
@@ -32,8 +33,28 @@ callback(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf
 		return FTW_CONTINUE;
 
 	bytes_read = 0;
+	// find KEY marker on first run
+	if (!keypos) {
+		char *p;
+		char m[6];
+
+		bytes_read = fread(buf, 1, nbytes, fp);
+		if (bytes_read < 150) {
+			printf("First file too small. Path incorrect?\n");
+			exit(EXIT_FAILURE);
+		}
+		// strip trailing null byte
+		memcpy(m, "\nKEY: ", sizeof(m));
+		p = memmem(buf, nbytes, m, sizeof(m));
+		if (!p || p < buf) {
+			printf("Could not find key marker. Path incorrect?\n");
+			exit(EXIT_FAILURE);
+		}
+		keypos = (ssize_t)(p - buf);
+	}
+
 	// skip the header
-	if (fseek(fp, 0x90L, SEEK_SET) == 0)
+	if (fseek(fp, keypos, SEEK_SET) == 0)
 		bytes_read = fread(buf, 1, nbytes, fp);
 	fclose(fp);
 
