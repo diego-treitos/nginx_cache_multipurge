@@ -72,10 +72,8 @@ end
 
 -------------------------------------------------------- purge specific entry --
 function purge_one()
-  local cache_key_md5 = md5.sumhexa( cmp_cache_key )
-  os.execute( "find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} + -quit" )
+  os.execute( "VAR=$(echo -n "..cmp_cache_key.." | md5sum | awk '{print $1}'); find '"..cmp_cache_path.."' -name ${VAR} -type f -exec rm {} + " )
 end
-
 
 --------------------------------------------------------------------------------
 ------------------------------------- main -------------------------------------
