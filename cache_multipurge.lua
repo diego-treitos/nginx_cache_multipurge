@@ -1,9 +1,8 @@
 -- vim: set ts=2 sw=2 sts=2 et:
 --
 --  Author: Diego Blanco <diego.blanco@treitos.com>
--- Version: 0.1
-
-local md5 = require 'md5'
+--  Author: Bryan Haskin <bhhaskin@bitsofsimplicity.com>
+-- Version: 0.2
 
 --------------------------------------------------------------------------------
 ---------------------------------- globals -------------------------------------
@@ -38,7 +37,7 @@ cmp_cache_key = cmp_cache_key:gsub( ngx.var.request_uri:gsub("%p", "%%%1"), cmp_
 --------------------------------------------------------------------------------
 --
 --------------------- sanitize string to be used as a shell command parameter --
-function safe_shell_command_param( string_with_user_input )
+local function safe_shell_command_param( string_with_user_input )
   -- prevent command injection
   return "'"..string_with_user_input:gsub( "%'", "'\"'\"'" ).."'"
 end
@@ -49,30 +48,33 @@ end
 --------------------------------------------------------------------------------
 --
 ----------------------------------------------------------- purge all entries --
-function purge_all()
+local function purge_all()
+  ngx.log(ngx.DEBUG, "Purge all Command: rm -rd '"..cmp_cache_path.."'/*")
   os.execute( "rm -rd '"..cmp_cache_path.."'/*" )
 end
 
 ------------------------------------------------------ purge matching entries --
-function purge_multi( uri )
+local function purge_multi( uri )
   if cmp_cache_keyfinder == "" or cmp_cache_keyfinder == "0" then -- use grep
     -- escape special characters for grep
     local cache_key_re = cmp_cache_key:gsub( "([%.%[%]])", "\\%1" )
     cache_key_re = cache_key_re:gsub( cmp_uri:gsub("%p","%%%1"), uri..".*" )
     local safe_grep_param = safe_shell_command_param( "^KEY: "..cache_key_re )
-
+    ngx.log(ngx.DEBUG, "Purge multi Command: grep -Raslm1  "..safe_grep_param.." "..cmp_cache_path.." | xargs -r rm -f")
     os.execute( "grep -Raslm1  "..safe_grep_param.." "..cmp_cache_path.." | xargs -r rm -f" )
   else -- use keyfinder
     local uri_start = cmp_cache_key:find(cmp_uri, 1, true) or cmp_cache_key:len()
     local prefix = safe_shell_command_param( cmp_cache_key:sub(1, uri_start-1)..uri )
     local suffix = " "..safe_shell_command_param( cmp_cache_key:sub(uri_start + cmp_uri:len()) )
+    ngx.log(ngx.DEBUG, "Purge multi Command: "..cmp_cache_keyfinder_path.." "..cmp_cache_path.." "..prefix..suffix.." -d")
     os.execute(cmp_cache_keyfinder_path.." "..cmp_cache_path.." "..prefix..suffix.." -d")
   end
 end
 
 -------------------------------------------------------- purge specific entry --
-function purge_one()
-  local cache_key_md5 = md5.sumhexa( cmp_cache_key )
+local function purge_one()
+  local cache_key_md5 = ngx.md5(cmp_cache_key)
+  ngx.log(ngx.DEBUG, "Purge one Command: find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} + -quit")
   os.execute( "find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} + -quit" )
 end
 
