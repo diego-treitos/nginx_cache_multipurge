@@ -2,7 +2,7 @@
 --
 --  Author: Diego Blanco <diego.blanco@treitos.com>
 --  Author: Bryan Haskin <bhhaskin@bitsofsimplicity.com>
--- Version: 0.2
+-- Version: 0.3
 
 --------------------------------------------------------------------------------
 ---------------------------------- globals -------------------------------------
@@ -74,8 +74,8 @@ end
 -------------------------------------------------------- purge specific entry --
 local function purge_one()
   local cache_key_md5 = ngx.md5(cmp_cache_key)
-  ngx.log(ngx.DEBUG, "Purge one Command: find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} + -quit")
-  os.execute( "find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} + -quit" )
+  ngx.log(ngx.DEBUG, "Purge one Command: find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} \\;")
+  os.execute( "find '"..cmp_cache_path.."' -name '"..cache_key_md5.."' -type f -exec rm {} \\;" )
 end
 
 
